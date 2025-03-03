@@ -18,6 +18,10 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
+import LaunchIcon from '@mui/icons-material/Launch';
 import { api, RIVER_DATA } from '../services/api';
 
 function RiverDetail() {
@@ -59,6 +63,46 @@ function RiverDetail() {
   const formatLastUpdated = () => {
     if (!lastUpdated) return '';
     return lastUpdated.toLocaleTimeString();
+  };
+
+  const getFlowTrendDisplay = (trend) => {
+    switch (trend) {
+      case 'rising':
+        return (
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            color: 'warning.main',
+            fontWeight: 'bold'
+          }}>
+            Rising <TrendingUpIcon sx={{ ml: 1 }} />
+          </Box>
+        );
+      case 'dropping':
+        return (
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            color: 'success.main',
+            fontWeight: 'bold'
+          }}>
+            Dropping <TrendingDownIcon sx={{ ml: 1 }} />
+          </Box>
+        );
+      case 'stable':
+        return (
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            color: 'info.main',
+            fontWeight: 'bold'
+          }}>
+            Stable <TrendingFlatIcon sx={{ ml: 1 }} />
+          </Box>
+        );
+      default:
+        return 'Unknown';
+    }
   };
 
   if (loading) {
@@ -162,11 +206,32 @@ function RiverDetail() {
 
         <ListItem>
           <ListItemText 
-            primary="River Flow"
+            primary={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Typography variant="subtitle1">River Gauge Height</Typography>
+                {getFlowTrendDisplay(riverData.gaugeTrend)}
+                <Link
+                  href={api.getUSGSUrl(riverData.usgsId)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ 
+                    display: 'inline-flex',
+                    alignItems: 'center'
+                  }}
+                >
+                  View USGS Data <LaunchIcon sx={{ ml: 0.5, fontSize: '1rem' }} />
+                </Link>
+              </Box>
+            }
             secondary={
-              riverData.flow === 'N/A' 
-                ? 'Data not available'
-                : `${riverData.flow} ft³/s (${riverData.flowTrend})`
+              <Box sx={{ mt: 1 }}>
+                <Typography variant="body1">
+                  Current: {riverData.gauge !== 'N/A' ? `${parseFloat(riverData.gauge).toFixed(2)} ft` : 'N/A'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  24 hours ago: {riverData.historicalGauge !== 'N/A' ? `${parseFloat(riverData.historicalGauge).toFixed(2)} ft` : 'N/A'}
+                </Typography>
+              </Box>
             }
           />
         </ListItem>

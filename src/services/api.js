@@ -18,15 +18,33 @@ export const api = {
   async getRiverFlow(siteId) {
     try {
       const response = await axios.get(
-        `https://waterservices.usgs.gov/nwis/iv/?format=json&sites=${siteId}&parameterCd=00060,00065`
+        `https://waterservices.usgs.gov/nwis/iv/?format=json&sites=${siteId}&parameterCd=00065&period=P1D`
       );
       
       // Check if we have valid data
       if (!response.data?.value?.timeSeries?.[0]?.values?.[0]?.value) {
-        throw new Error('No flow data available for this site');
+        throw new Error('No gauge height data available for this site');
       }
+
+      const values = response.data.value.timeSeries[0].values[0].value;
+      const current = values[0];
+      // Find value closest to 24 hours ago
+      const historical = values.find(v => {
+        const timeDiff = Math.abs(
+          new Date(current.dateTime) - new Date(v.dateTime)
+        );
+        return timeDiff >= 23 * 60 * 60 * 1000 && timeDiff <= 25 * 60 * 60 * 1000;
+      }) || values[values.length - 1];
       
-      return response.data;
+      return {
+        value: {
+          timeSeries: [{
+            values: [{
+              value: [current, historical]
+            }]
+          }]
+        }
+      };
     } catch (error) {
       console.error('USGS API Error:', error.response || error);
       // Return a default structure to prevent crashes
@@ -34,11 +52,29 @@ export const api = {
         value: {
           timeSeries: [{
             values: [{
-              value: [{ value: 0 }, { value: 0 }]
+              value: [
+                { value: 'N/A', dateTime: new Date().toISOString() },
+                { value: 'N/A', dateTime: new Date().toISOString() }
+              ]
             }]
           }]
         }
       };
+    }
+  },
+
+  async getCoordinatesFromZip(zipCode) {
+    try {
+      const response = await axios.get(
+        `https://api.openweathermap.org/geo/1.0/zip?zip=${zipCode},US&appid=${OPENWEATHER_API_KEY}`
+      );
+      return {
+        lat: response.data.lat,
+        lon: response.data.lon
+      };
+    } catch (error) {
+      console.error('Error getting coordinates from zip:', error);
+      throw new Error('Invalid ZIP code');
     }
   },
 
@@ -49,19 +85,19 @@ export const api = {
         this.getRiverFlow(river.usgsId)
       ]);
 
-      const flowValue = flow?.value?.timeSeries?.[0]?.values?.[0]?.value?.[0]?.value || 'N/A';
-      const flowTrend = this.calculateFlowTrend(flow);
+      const currentGauge = flow?.value?.timeSeries?.[0]?.values?.[0]?.value?.[0]?.value;
+      const historicalGauge = flow?.value?.timeSeries?.[0]?.values?.[0]?.value?.[1]?.value;
 
       return {
         ...river,
         weather: weather.list[0],
-        flow: flowValue,
-        flowTrend,
+        gauge: currentGauge,
+        historicalGauge: historicalGauge,
+        gaugeTrend: this.calculateFlowTrend(flow),
         score: this.calculateScore(river, weather, flow)
       };
     } catch (error) {
       console.error('Error calculating conditions for river:', river.name, error);
-      // Return a default structure to prevent crashes
       return {
         ...river,
         weather: {
@@ -70,8 +106,9 @@ export const api = {
           wind: { speed: 0 },
           pop: 0
         },
-        flow: 'N/A',
-        flowTrend: 'unknown',
+        gauge: 'N/A',
+        historicalGauge: 'N/A',
+        gaugeTrend: 'unknown',
         score: 0
       };
     }
@@ -80,13 +117,13 @@ export const api = {
   calculateFlowTrend(flowData) {
     try {
       // Check if we have valid flow data
-      if (!flowData?.value?.timeSeries?.[0]?.values?.[0]?.value?.[0]?.value) {
+      if (!flowData?.value?.timeSeries?.[0]?.values?.[0]?.value) {
         return 'unknown';
       }
 
       const current = parseFloat(flowData.value.timeSeries[0].values[0].value[0].value);
       const previous = parseFloat(flowData.value.timeSeries[0].values[0].value[1]?.value);
-
+      
       // Check if we have valid numbers to compare
       if (isNaN(current) || isNaN(previous)) {
         return 'unknown';
@@ -167,6 +204,10 @@ export const api = {
       Math.sin(dLon/2) * Math.sin(dLon/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return R * c;
+  },
+
+  getUSGSUrl(siteId) {
+    return `https://waterdata.usgs.gov/monitoring-location/${siteId}/`;
   }
 };
 
@@ -176,7 +217,7 @@ export const RIVER_DATA = [
     name: "Deschutes River",
     lat: 45.6387,
     lon: -121.1865,
-    usgsId: "14103000", // Deschutes River at Moody, OR
+    usgsId: "14103000",
     isOpen: true,
     anticipatedReturn: 8000
   },
@@ -185,7 +226,7 @@ export const RIVER_DATA = [
     name: "Columbia River",
     lat: 45.6075,
     lon: -121.1786,
-    usgsId: "14105700", // Columbia River at The Dalles, OR
+    usgsId: "14105700",
     isOpen: true,
     anticipatedReturn: 12000
   },
@@ -194,7 +235,7 @@ export const RIVER_DATA = [
     name: "Willamette River",
     lat: 45.6528,
     lon: -122.7645,
-    usgsId: "14211720", // Willamette River at Portland, OR
+    usgsId: "14211720",
     isOpen: true,
     anticipatedReturn: 6000
   },
@@ -203,7 +244,7 @@ export const RIVER_DATA = [
     name: "Clackamas River",
     lat: 45.3735,
     lon: -122.6067,
-    usgsId: "14211010", // Clackamas River at Estacada, OR
+    usgsId: "14211010",
     isOpen: true,
     anticipatedReturn: 4500
   },
@@ -212,7 +253,7 @@ export const RIVER_DATA = [
     name: "Sandy River",
     lat: 45.5479,
     lon: -122.3786,
-    usgsId: "14142500", // Sandy River near Bull Run, OR
+    usgsId: "14142500",
     isOpen: true,
     anticipatedReturn: 3500
   },
@@ -221,7 +262,7 @@ export const RIVER_DATA = [
     name: "Cowlitz River",
     lat: 46.2673,
     lon: -122.9165,
-    usgsId: "14243000", // Cowlitz River at Castle Rock, WA
+    usgsId: "14243000",
     isOpen: true,
     anticipatedReturn: 7500
   },
@@ -230,7 +271,7 @@ export const RIVER_DATA = [
     name: "Clearwater River",
     lat: 46.4275,
     lon: -116.8312,
-    usgsId: "13341050", // Clearwater River at Spalding, ID
+    usgsId: "13341050",
     isOpen: true,
     anticipatedReturn: 15000
   },
@@ -239,7 +280,7 @@ export const RIVER_DATA = [
     name: "Klickitat River",
     lat: 45.6973,
     lon: -121.2929,
-    usgsId: "14113000", // Klickitat River near Pitt, WA
+    usgsId: "14113000",
     isOpen: true,
     anticipatedReturn: 3000
   },
@@ -248,7 +289,7 @@ export const RIVER_DATA = [
     name: "Hoh River",
     lat: 47.8582,
     lon: -124.2510,
-    usgsId: "12041200", // Hoh River at US Highway 101 near Forks, WA
+    usgsId: "12041200",
     isOpen: true,
     anticipatedReturn: 5000
   },
@@ -257,7 +298,7 @@ export const RIVER_DATA = [
     name: "Quillayute River",
     lat: 47.9134,
     lon: -124.6327,
-    usgsId: "12043300", // Quillayute River at La Push, WA
+    usgsId: "12043300",
     isOpen: true,
     anticipatedReturn: 4500
   },
@@ -266,7 +307,7 @@ export const RIVER_DATA = [
     name: "Sol Duc River",
     lat: 48.0154,
     lon: -124.0179,
-    usgsId: "12041500", // Sol Duc River near Forks, WA
+    usgsId: "12041500",
     isOpen: true,
     anticipatedReturn: 3800
   },
@@ -275,7 +316,7 @@ export const RIVER_DATA = [
     name: "Bogachiel River",
     lat: 47.9034,
     lon: -124.3855,
-    usgsId: "12043000", // Bogachiel River near La Push, WA
+    usgsId: "12043000",
     isOpen: true,
     anticipatedReturn: 3200
   },
@@ -284,7 +325,7 @@ export const RIVER_DATA = [
     name: "Calawah River",
     lat: 47.9700,
     lon: -124.3960,
-    usgsId: "12043100", // Calawah River near Forks, WA
+    usgsId: "12043100",
     isOpen: true,
     anticipatedReturn: 2800
   },
@@ -293,7 +334,7 @@ export const RIVER_DATA = [
     name: "Quinault River",
     lat: 47.4581,
     lon: -123.8893,
-    usgsId: "12039500", // Quinault River at Quinault Lake, WA
+    usgsId: "12039500",
     isOpen: true,
     anticipatedReturn: 4200
   },
@@ -302,8 +343,44 @@ export const RIVER_DATA = [
     name: "Elwha River",
     lat: 48.1178,
     lon: -123.5569,
-    usgsId: "12045500", // Elwha River at McDonald Bridge near Port Angeles, WA
+    usgsId: "12045500",
     isOpen: true,
     anticipatedReturn: 3500
+  },
+  {
+    id: 16,
+    name: "Skagit River",
+    lat: 48.4879,
+    lon: -122.2429,
+    usgsId: "12200500",
+    isOpen: true,
+    anticipatedReturn: 8500
+  },
+  {
+    id: 17,
+    name: "Sauk River",
+    lat: 48.2826,
+    lon: -121.5571,
+    usgsId: "12189500",
+    isOpen: true,
+    anticipatedReturn: 4200
+  },
+  {
+    id: 18,
+    name: "North Umpqua River",
+    lat: 43.3168,
+    lon: -123.0678,
+    usgsId: "14319500",
+    isOpen: true,
+    anticipatedReturn: 5500
+  },
+  {
+    id: 19,
+    name: "Skykomish River",
+    lat: 47.8168,
+    lon: -121.9677,
+    usgsId: "12134500",
+    isOpen: true,
+    anticipatedReturn: 6000
   }
 ]; 
