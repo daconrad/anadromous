@@ -2,6 +2,9 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material';
 import RiverList from './components/RiverList';
 import RiverDetail from './components/RiverDetail';
+import History from './components/History';
+import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 
 const theme = createTheme({
   palette: {
@@ -18,10 +21,37 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <Router>
-        <Routes>
-          <Route path="/" element={<RiverList />} />
-          <Route path="/river/:id" element={<RiverDetail />} />
-        </Routes>
+        <AppBar position="static">
+          <Toolbar>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              Anadromous
+            </Typography>
+            <Box>
+              <Button 
+                color="inherit" 
+                component={RouterLink} 
+                to="/"
+              >
+                Rivers
+              </Button>
+              <Button 
+                color="inherit" 
+                component={RouterLink} 
+                to="/history"
+              >
+                History
+              </Button>
+            </Box>
+          </Toolbar>
+        </AppBar>
+
+        <Box sx={{ pt: 2 }}>
+          <Routes>
+            <Route path="/" element={<RiverList />} />
+            <Route path="/river/:id" element={<RiverDetail />} />
+            <Route path="/history" element={<History />} />
+          </Routes>
+        </Box>
       </Router>
     </ThemeProvider>
   );
