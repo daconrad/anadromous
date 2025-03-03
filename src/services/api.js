@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const OPENWEATHER_API_KEY = 'a60f66bf893ff1d959e7c11fadc5facd';
+const OPENWEATHER_API_KEY = process.env.REACT_APP_OPENWEATHER_API_KEY;
 
 export const api = {
   async getWeatherData(lat, lon) {
