@@ -107,10 +107,33 @@ function RiverList() {
             key={river.id} 
             button 
             onClick={() => navigate(`/river/${river.id}`)}
+            sx={{
+              '&:hover': {
+                backgroundColor: 'rgba(25, 118, 210, 0.04)',
+              },
+              mb: 1,
+            }}
           >
             <ListItemText 
-              primary={river.name}
-              secondary={`Score: ${river.score} | Flow: ${river.flow} ${river.flowTrend} | ${river.distance} miles away`}
+              primary={
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontSize: '1.3rem',  // 30% larger
+                    fontWeight: 600,     // bolder
+                    color: 'primary.main'
+                  }}
+                >
+                  {river.name}
+                </Typography>
+              }
+              secondary={
+                <Box sx={{ mt: 0.5 }}>
+                  <Typography variant="body2">
+                    Score: {river.score} | Flow: {river.flow} {river.flowTrend} | {river.distance} miles
+                  </Typography>
+                </Box>
+              }
             />
           </ListItem>
         ))}

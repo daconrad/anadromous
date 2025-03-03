@@ -5,8 +5,26 @@ import RiverDetail from './components/RiverDetail';
 import History from './components/History';
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
+import '@fontsource/source-sans-pro';
 
 const theme = createTheme({
+  typography: {
+    fontFamily: '"Source Sans Pro", sans-serif',
+    h4: {
+      fontFamily: '"Source Sans Pro", sans-serif',
+      fontWeight: 600,
+    },
+    h6: {
+      fontFamily: '"Source Sans Pro", sans-serif',
+      fontWeight: 600,
+    },
+    body1: {
+      fontFamily: '"Source Sans Pro", sans-serif',
+    },
+    body2: {
+      fontFamily: '"Source Sans Pro", sans-serif',
+    },
+  },
   palette: {
     primary: {
       main: '#1976d2',
