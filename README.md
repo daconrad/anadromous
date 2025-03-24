@@ -68,3 +68,10 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+
+## Roadmap
+* Include wind speed/direction as part of weather
+* Include three-day forecast
+* Add more rivers (Grand Ronde, Willamette, etc.)
+* Sort control (sorty by rating, distance, temp/precipitation/etc.)
