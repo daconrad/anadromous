@@ -75,3 +75,35 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/t
 * Include three-day forecast
 * Add more rivers (Grand Ronde, Willamette, etc.)
 * Sort control (sorty by rating, distance, temp/precipitation/etc.)
+
+## Vibe Code...
+
+Act as a JavaScript developer. Build  an application called “Anadromous” which provides a summary of the steelhead fishing conditions for rivers around the pacific northwest. 
+
+For all weather-related data, use Openweather with the API Key: Sssshhhhhhh....
+
+For all river-flow data, use USGS water data
+
+The factors that matter are as follows, in order of impact:
+
+Access: If regulations state the river is closed to angling, no other factors matter.
+
+Anticipated Return Size: If known, the more fish that are anticipated to return to the river, the better. Use current data and information from official state fish and wildlife sources. Represent anticipated return size with the number of fish.
+
+River Flow: River flow is better if it has been high recently but is a day or two into dropping. Represent river flow with feet. If feet is not available use cubic feet per second. Also indicate if the value is rising, staying level, or dropping from the previous day.
+
+Temperatures from previous three days: Lower temperatures are better. Represent temperature in degrees Fahrenheit
+
+Weather Conditions: Cloudy is better than sunny. Represent weather conditions with a short text description
+
+Precipitation: Light precipitation is okay, heavy precipitation is bad. Represent precipitation in % probability
+
+Wind: No wind is better than wind. Represent wind in knots per hour
+
+Weekday: Tuesday Wednesday, and Thursday are better than Friday or Monday. Saturday and Sunday are the least desirable.
+
+Distance from my current location: Closer is better than farther away. Represent distance in miles from current location.
+
+After launching the application loads a screen with a list of rivers sorted in order of estimated conditions quality from best to worst within a 400 mile radius. The user can choose to increase or decrease the radius distance.
+
+If a user selects a specific location, a new screen displays all the condition data used to create the rating in prioritized order. It also displays a button to go back to the list of locations.
