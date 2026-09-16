@@ -79,39 +79,39 @@ export const api = {
   },
 
   async calculateRiverConditions(river) {
-    try {
-      const [weather, flow] = await Promise.all([
-        this.getWeatherData(river.lat, river.lon),
-        this.getRiverFlow(river.usgsId)
-      ]);
+    // Fetch weather and flow independently so a failure in one (e.g. a
+    // missing weather API key) doesn't wipe out the other's data.
+    const [weatherResult, flowResult] = await Promise.allSettled([
+      this.getWeatherData(river.lat, river.lon),
+      this.getRiverFlow(river.usgsId)
+    ]);
 
-      const currentGauge = flow?.value?.timeSeries?.[0]?.values?.[0]?.value?.[0]?.value;
-      const historicalGauge = flow?.value?.timeSeries?.[0]?.values?.[0]?.value?.[1]?.value;
+    const weather = weatherResult.status === 'fulfilled' ? weatherResult.value : null;
+    const flow = flowResult.status === 'fulfilled' ? flowResult.value : null;
 
-      return {
-        ...river,
-        weather: weather.list[0],
-        gauge: currentGauge,
-        historicalGauge: historicalGauge,
-        gaugeTrend: this.calculateFlowTrend(flow),
-        score: this.calculateScore(river, weather, flow)
-      };
-    } catch (error) {
-      console.error('Error calculating conditions for river:', river.name, error);
-      return {
-        ...river,
-        weather: {
-          main: { temp: 0 },
-          weather: [{ description: 'No data available' }],
-          wind: { speed: 0 },
-          pop: 0
-        },
-        gauge: 'N/A',
-        historicalGauge: 'N/A',
-        gaugeTrend: 'unknown',
-        score: 0
-      };
+    if (weatherResult.status === 'rejected') {
+      console.error('Weather unavailable for river:', river.name, weatherResult.reason);
     }
+    if (flowResult.status === 'rejected') {
+      console.error('Flow unavailable for river:', river.name, flowResult.reason);
+    }
+
+    const currentGauge = flow?.value?.timeSeries?.[0]?.values?.[0]?.value?.[0]?.value;
+    const historicalGauge = flow?.value?.timeSeries?.[0]?.values?.[0]?.value?.[1]?.value;
+
+    return {
+      ...river,
+      weather: weather?.list?.[0] || {
+        main: { temp: 0 },
+        weather: [{ description: 'No data available' }],
+        wind: { speed: 0 },
+        pop: 0
+      },
+      gauge: currentGauge ?? 'N/A',
+      historicalGauge: historicalGauge ?? 'N/A',
+      gaugeTrend: this.calculateFlowTrend(flow),
+      score: this.calculateScore(river, weather, flow)
+    };
   },
 
   calculateFlowTrend(flowData) {
