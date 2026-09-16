@@ -40,6 +40,7 @@ function RiverList() {
     if (userLocation) {
       loadRivers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [radius, userLocation]);
 
   const initializeLocation = async () => {

@@ -3,8 +3,6 @@ import {
   Container,
   Typography,
   List,
-  ListItem,
-  ListItemText,
   Paper,
   Box,
   Divider
